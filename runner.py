@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+import numpy as np
 
 # import scripts from different files
 from multislice import solve_multislice
@@ -13,7 +14,7 @@ load_dotenv()
 path = os.getenv("POT_PATH")
 
 # Check if path loaded correctly
-print(path)
+dataset = np.load(path)
 
 # set params
 # probably can use Settings class from given code
