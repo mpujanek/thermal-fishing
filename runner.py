@@ -5,7 +5,7 @@ import numpy as np
 # import scripts from different files
 from multislice import solve_multislice
 from fds import solve_fds
-from eval import compare
+from eval import rel_error
 
 # Load the .env file
 load_dotenv()
@@ -27,4 +27,4 @@ result_ms = solve_multislice(params)
 result_fds = solve_fds(params)
 
 # compare result
-result = compare(result_ms, result_fds)
+result = rel_error(result_fds, result_ms)
