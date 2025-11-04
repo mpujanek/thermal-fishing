@@ -6,6 +6,7 @@
 # backend for graphic generation
 import numpy as np
 import matplotlib
+from scipy import signal
 matplotlib.use("Qt5Agg")
 
 # use path from .env
@@ -187,6 +188,29 @@ def multislice_alt(potential, cfg):
     return psi
 
 
+def fds_conv(potential, cfg):
+
+    # Precompute the bandwidth limiting mask and the Fresnel propagator
+    bwl_msk = bandwidth_limit(cfg)
+
+    # The multislice itself is surprisingly simple:
+    psi = np.copy(cfg.probe)  # Initialize with the probe function
+    psi_prev = np.zeros_like(cfg.probe)   # Initialize with zeros
+
+    c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
+    c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
+    for ii in range(cfg.shape[0]):
+        term1 = laplace(psi)
+        term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
+        tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
+        psi_next = np.copy(ifft2(fft2(tmp)*bwl_msk))
+
+        psi_prev = np.copy(psi)
+        psi = np.copy(psi_next)
+
+    return psi
+
+
 def fds(potential, cfg):
 
     # Precompute the bandwidth limiting mask and the Fresnel propagator
@@ -194,7 +218,7 @@ def fds(potential, cfg):
 
     # The multislice itself is surprisingly simple:
     psi = np.copy(cfg.probe)  # Initialize with the probe function
-    psi_prev = np.zeros(cfg.probe.shape)   # Initialize with zeros
+    psi_prev = np.zeros_like(cfg.probe)   # Initialize with zeros
 
     Nx, Ny = cfg.shape[1], cfg.shape[2]
     kx = np.fft.fftfreq(Nx, cfg.dx)  # spatial frequencies along x-axis
@@ -209,12 +233,17 @@ def fds(potential, cfg):
         term1 = ifft2(-4 * np.pi**2 * k * fft2(psi))
         term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
         tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
-        psi_next = np.copy(ifft2(fft2(tmp) * bwl_msk))
+        psi_next = np.copy(ifft2(fft2(tmp)*bwl_msk))
 
         psi_prev = np.copy(psi)
         psi = np.copy(psi_next)
 
     return psi
+
+
+def laplace(f):
+    kernel = 1/4*np.array([[1, 2, 1], [2, -12, 2], [1, 2, 1]])
+    return signal.convolve2d(f, kernel, boundary="symm", mode="same")
 
 
 def crop_dp(dp, cfg):
@@ -249,7 +278,7 @@ if __name__ == '__main__':
     # potential = amorphous_sample(seed=31415)  # Set the seed so the potential is the same between runs
 
     # Bin the z-direction to test various dz samplings:
-    potential, dz = bin_z(potential, dz, factor=10)
+    # potential, dz = bin_z(potential, dz, factor=10)
     # Optional: select inner quarter to compute faster during testing by cropping the x- and y-directions
     potential = crop_xy(potential, factor=1)
     # Crop the z-direction if needed
