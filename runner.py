@@ -23,17 +23,18 @@ alpha = 20.  # [mrad] convergence angle, 20. is the default.
 dz = 20.6 # [pm], default
 
 # Inputs for full run
-alphas = [alpha, alpha/1.2]
-dzs = [dz, dz/2]
+alphas = [alpha]
+dzs = [dz/2, dz/4, dz/8]
 
 # get multislice results
 psis_ms, settings_ms = run(multislice, potential, alphas, dzs)
 
 # get fds results
-# psis_fds = run(fds, potential, alphas, dzs)
+psis_fds, settings_fds = run(fds, potential, alphas, dzs)
 
 # visualize result (multislice)
-visualize_grid(psis_ms, alphas, dzs, settings_ms)
+visualize_grid(psis_ms, alphas, dzs, settings_ms, label="Multislice")
+visualize_grid(psis_fds, alphas, dzs, settings_fds, label="FDS")
 
 # compare results
 #result = rel_error(ms_pattern, fds_pattern)

@@ -21,12 +21,14 @@ def visualize(psi, potential, settings):
     ax[1, 1].set_title('Diffraction pattern (logarithmic gray scale)')
     plt.show()
 
-def visualize_grid(psis, alphas, dzs, settings):
+def visualize_grid(psis, alphas, dzs, settings, label=None):
     # Initialize ax
     fig, ax = plt.subplots(len(alphas), len(dzs), squeeze=False)
 
-    fig.suptitle('Diffraction pattern (logarithmic gray scale)')
-
+    if label is not None:
+        fig.suptitle(f'Diffraction pattern (logarithmic gray scale); method: {label}')
+    else:
+        fig.suptitle('Diffraction pattern (logarithmic gray scale)')
 
     for i in range(len(alphas)):
         for j in range(len(dzs)):
