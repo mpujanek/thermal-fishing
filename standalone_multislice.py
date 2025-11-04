@@ -165,9 +165,24 @@ def multislice(potential, cfg):
 
     # The multislice itself is surprisingly simple:
     psi = cfg.probe  # Initialize with the probe function
-    for ii in range(cfg.shape[0]):
+    for ii in range(cfg.shape[0]//2):
         tmp = fft2(np.exp(1.j * cfg.sigma * potential[ii, :, :] * cfg.dz) * psi)
         psi = ifft2(tmp * prop * bwl_msk)  # Impinging wave for the next slice
+
+    return psi
+
+
+def multislice_alt(potential, cfg):
+
+    # Precompute the bandwidth limiting mask and the Fresnel propagator
+    bwl_msk = bandwidth_limit(cfg)
+    prop = propagator(cfg)
+
+    # The multislice itself is surprisingly simple:
+    psi = cfg.probe  # Initialize with the probe function
+    for ii in range(cfg.shape[0]):
+        tmp = np.exp(1.j * cfg.sigma * potential[ii, :, :] * cfg.dz)*ifft2(fft2(psi)*prop*bwl_msk)
+        psi = tmp  # Impinging wave for the next slice
 
     return psi
 
