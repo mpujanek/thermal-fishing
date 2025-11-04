@@ -1,4 +1,6 @@
 import numpy as np
+from scipy import signal
+
 
 def bin_z(f, dz, factor: int = 2):
 
@@ -85,3 +87,8 @@ def diffraction_pattern(psi, cfg):
     dp = np.abs(fft2(psi))**2  # Convert to diffraction space and intensities
 
     return crop_dp(dp, cfg)
+
+
+def laplace(f):
+    kernel = 1/4*np.array([[1, 2, 1], [2, -12, 2], [1, 2, 1]])
+    return signal.convolve2d(f, kernel, boundary="symm", mode="same")

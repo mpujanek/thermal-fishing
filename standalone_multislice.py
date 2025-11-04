@@ -6,7 +6,7 @@
 # backend for graphic generation
 import numpy as np
 import matplotlib
-from scipy import signal
+from helpers import laplace
 matplotlib.use("Qt5Agg")
 
 # use path from .env
@@ -241,11 +241,6 @@ def fds(potential, cfg):
     return psi
 
 
-def laplace(f):
-    kernel = 1/4*np.array([[1, 2, 1], [2, -12, 2], [1, 2, 1]])
-    return signal.convolve2d(f, kernel, boundary="symm", mode="same")
-
-
 def crop_dp(dp, cfg):
     # crop the area away that has been zero'd in the bandwidth limitation step
 
@@ -257,7 +252,7 @@ def crop_dp(dp, cfg):
 
 def diffraction_pattern(potential, cfg):
 
-    psi = fds(potential, cfg)  # Calculate the exit wave of the sample
+    psi = fds_conv(potential, cfg)  # Calculate the exit wave of the sample
 
     dp = np.abs(fft2(psi))**2  # Convert to diffraction space and intensities
 
