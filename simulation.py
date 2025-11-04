@@ -56,28 +56,36 @@ def fds(potential, cfg):
 
 # x,y factor=1; z cropping up to us (can use factor 5 or 10); vary dz
 def run(solver, potential, alphas, dzs, bin_z=False):
-    psis = np.zeros((len(alphas), len(dzs)))
+
     # Optional: select inner quarter to compute faster during testing by cropping the x- and y-directions
     potential = crop_xy(potential, factor=1)
     # Crop the z-direction because sample too thick
     potential = crop_z(potential, factor=10)
-    for dz in dzs:
-        for alpha in alphas:
+
+    psis = []
+    settings = []
+    for i in range(len(alphas)):
+        psis.append([])
+        settings.append([])
+        for j in range(len(dzs)):
             # Bin the z-direction to make computation faster:
             if bin_z:
-                potential, dz = bin_z(potential, dz, factor=10)
+                potential, dzs[j] = bin_z(potential, dzs[j], factor=10)
 
             cfg = Settings(ht=100.,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
                     # The size and dx of the provided potential are optimized for alpha=20. Keep fixed, especially
                     # in the beginning of the assignment! Later you can vary between 10. and 30. if you're curious.
-                    alpha=alpha,  # [mrad] convergence angle, 20. is the default.
+                    alpha=alphas[i],  # [mrad] convergence angle, 20. is the default.
                     shape=potential.shape,  # shape of the potential array: z-, y- and x-direction
                     dx=20.6,  # [pm] sampling size in y and x direction
-                    dz=dz,  # [pm] sampling size in z direction, same as dx when None
+                    dz=dzs[j],  # [pm] sampling size in z direction, same as dx when None
                     )
             
             psi = solver(potential, cfg)
 
-            psis[alpha][dz] = psi
+            print(j)
 
-    return psis
+            psis[i].append(psi)
+            settings[i].append(cfg)
+
+    return psis, settings

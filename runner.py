@@ -3,7 +3,9 @@ import os
 import numpy as np
 
 # Import scripts
+from helpers import amorphous_sample
 from simulation import run, multislice, fds
+from visualization import visualize_grid
 from eval import rel_error
 
 # Load the .env file
@@ -21,18 +23,17 @@ alpha = 20.  # [mrad] convergence angle, 20. is the default.
 dz = 20.6 # [pm], default
 
 # Inputs for full run
-alphas = [alpha]
-dzs = [dz]
+alphas = [alpha, alpha/1.2]
+dzs = [dz, dz/2]
 
 # get multislice results
-psis_ms = run(multislice, potential, alphas, dzs)
+psis_ms, settings_ms = run(multislice, potential, alphas, dzs)
 
 # get fds results
-psis_fds = run(fds, potential, alphas, dzs)
+# psis_fds = run(fds, potential, alphas, dzs)
 
-# compare result
-for ms in psis_ms:
-    for fds in psis_fds:
-        ms_pattern = visualize(ms)
-        fds_pattern = visualize(fds)
-        result = rel_error(ms_pattern, fds_pattern)
+# visualize result (multislice)
+visualize_grid(psis_ms, alphas, dzs, settings_ms)
+
+# compare results
+#result = rel_error(ms_pattern, fds_pattern)
