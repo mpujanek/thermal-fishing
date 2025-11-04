@@ -172,6 +172,29 @@ def multislice(potential, cfg):
     return psi
 
 
+def fds(potential, cfg):
+
+    # Precompute the bandwidth limiting mask and the Fresnel propagator
+    bwl_msk = bandwidth_limit(cfg)
+
+    # The multislice itself is surprisingly simple:
+    psi = np.copy(cfg.probe)  # Initialize with the probe function
+    psi_prev = np.zeros(cfg.probe.shape)
+    k = cfg.alpha/cfg.lam
+    c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
+    c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
+    for ii in range(cfg.shape[0]):
+        term1 = ifft2(-4 * (np.pi * k)**2 * fft2(psi))
+        term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
+        tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
+        psi_next = np.copy(ifft2(fft2(tmp) * bwl_msk))
+
+        psi_prev = np.copy(psi)
+        psi = np.copy(psi_next)
+
+    return psi
+
+
 def crop_dp(dp, cfg):
     # crop the area away that has been zero'd in the bandwidth limitation step
 
@@ -183,7 +206,7 @@ def crop_dp(dp, cfg):
 
 def diffraction_pattern(potential, cfg):
 
-    psi = multislice(potential, cfg)  # Calculate the exit wave of the sample
+    psi = fds(potential, cfg)  # Calculate the exit wave of the sample
 
     dp = np.abs(fft2(psi))**2  # Convert to diffraction space and intensities
 
@@ -204,7 +227,7 @@ if __name__ == '__main__':
     # potential = amorphous_sample(seed=31415)  # Set the seed so the potential is the same between runs
 
     # Bin the z-direction to test various dz samplings:
-    potential, dz = bin_z(potential, dz, factor=10)
+    potential, dz = bin_z(potential, dz, factor=20)
     # Optional: select inner quarter to compute faster during testing by cropping the x- and y-directions
     potential = crop_xy(potential, factor=1)
     # Crop the z-direction if needed
