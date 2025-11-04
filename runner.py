@@ -3,7 +3,9 @@ import os
 import numpy as np
 
 # Import scripts
+from helpers import amorphous_sample
 from simulation import run, multislice, fds
+from visualization import visualize_grid
 from eval import rel_error
 
 # Load the .env file
@@ -22,17 +24,17 @@ dz = 20.6 # [pm], default
 
 # Inputs for full run
 alphas = [alpha]
-dzs = [dz]
+dzs = [dz/2, dz/4, dz/8]
 
 # get multislice results
-psis_ms = run(multislice, potential, alphas, dzs)
+psis_ms, settings_ms = run(multislice, potential, alphas, dzs)
 
 # get fds results
-psis_fds = run(fds, potential, alphas, dzs)
+psis_fds, settings_fds = run(fds, potential, alphas, dzs)
 
-# compare result
-for ms in psis_ms:
-    for fds in psis_fds:
-        ms_pattern = visualize(ms)
-        fds_pattern = visualize(fds)
-        result = rel_error(ms_pattern, fds_pattern)
+# visualize result (multislice)
+visualize_grid(psis_ms, alphas, dzs, settings_ms, label="Multislice")
+visualize_grid(psis_fds, alphas, dzs, settings_fds, label="FDS")
+
+# compare results
+#result = rel_error(ms_pattern, fds_pattern)
