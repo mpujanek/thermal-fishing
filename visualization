@@ -1,0 +1,23 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from helpers import diffraction_pattern
+
+# print(settings.dx, settings.dz, potential.shape, settings.sigma)
+
+def visualize(psi, potential, settings):
+    # Compute the pattern
+    pattern = diffraction_pattern(psi)
+
+    print(np.array(pattern).shape)
+
+    # Show the results
+    _, ax = plt.subplots(2, 2)
+    ax[0, 0].imshow(np.abs(settings.probe)**2, cmap='gray', interpolation='nearest')
+    ax[0, 0].set_title('Electron probe')
+    ax[0, 1].imshow(np.sum(potential, axis=0) * settings.sigma * settings.dz, cmap='gray', interpolation='nearest')
+    ax[0, 1].set_title('Projected potential in radians')
+    ax[1, 0].imshow(pattern, cmap='gray', interpolation='nearest')
+    ax[1, 0].set_title('Diffraction pattern (linear gray scale)')
+    ax[1, 1].imshow(np.log(1e9 * np.abs(pattern) + 1.), cmap='gray', interpolation='nearest')
+    ax[1, 1].set_title('Diffraction pattern (logarithmic gray scale)')
+    plt.show()

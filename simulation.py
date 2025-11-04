@@ -1,0 +1,51 @@
+import numpy as np
+from Settings import Settings
+from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z
+
+def multislice(potential, cfg):
+
+    # Precompute the bandwidth limiting mask and the Fresnel propagator
+    bwl_msk = bandwidth_limit(cfg)
+    prop = propagator(cfg)
+
+    # The multislice itself is surprisingly simple:
+    psi = cfg.probe  # Initialize with the probe function
+    for ii in range(cfg.shape[0]):
+        tmp = fft2(np.exp(1.j * cfg.sigma * potential[ii, :, :] * cfg.dz) * psi)
+        psi = ifft2(tmp * prop * bwl_msk)  # Impinging wave for the next slice
+
+    return psi
+
+
+def fds(potential, cfg):
+    psi = None
+    return psi
+
+
+# x,y factor=1; z cropping up to us (can use factor 5 or 10); vary dz
+def run(solver, potential, alphas, dzs, bin_z=False):
+    psis = np.zeros((len(alphas), len(dzs)))
+    # Optional: select inner quarter to compute faster during testing by cropping the x- and y-directions
+    potential = crop_xy(potential, factor=1)
+    # Crop the z-direction because sample too thick
+    potential = crop_z(potential, factor=10)
+    for dz in dzs:
+        for alpha in alphas:
+            # Bin the z-direction to make computation faster:
+            if bin_z:
+                potential, dz = bin_z(potential, dz, factor=10)
+
+            cfg = Settings(ht=100.,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
+                    # The size and dx of the provided potential are optimized for alpha=20. Keep fixed, especially
+                    # in the beginning of the assignment! Later you can vary between 10. and 30. if you're curious.
+                    alpha=alpha,  # [mrad] convergence angle, 20. is the default.
+                    shape=potential.shape,  # shape of the potential array: z-, y- and x-direction
+                    dx=20.6,  # [pm] sampling size in y and x direction
+                    dz=dz,  # [pm] sampling size in z direction, same as dx when None
+                    )
+            
+            psi = solver(potential, cfg)
+
+            psis[alpha][dz] = psi
+
+    return psis
