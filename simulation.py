@@ -18,7 +18,25 @@ def multislice(potential, cfg):
 
 
 def fds(potential, cfg):
-    psi = None
+
+    # Precompute the bandwidth limiting mask and the Fresnel propagator
+    bwl_msk = bandwidth_limit(cfg)
+
+    # The multislice itself is surprisingly simple:
+    psi = np.copy(cfg.probe)  # Initialize with the probe function
+    psi_prev = np.zeros(cfg.probe.shape)
+    k = cfg.alpha/cfg.lam
+    c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
+    c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
+    for ii in range(cfg.shape[0]):
+        term1 = ifft2(-4 * (np.pi * k)**2 * fft2(psi))
+        term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
+        tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
+        psi_next = np.copy(ifft2(fft2(tmp) * bwl_msk))
+
+        psi_prev = np.copy(psi)
+        psi = np.copy(psi_next)
+
     return psi
 
 
