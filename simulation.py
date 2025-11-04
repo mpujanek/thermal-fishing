@@ -2,6 +2,7 @@ import numpy as np
 from Settings import Settings
 from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z
 
+
 def multislice(potential, cfg):
 
     # Precompute the bandwidth limiting mask and the Fresnel propagator
@@ -15,6 +16,7 @@ def multislice(potential, cfg):
         psi = ifft2(tmp * prop * bwl_msk)  # Impinging wave for the next slice
 
     return psi
+
 
 def multislice_alt(potential, cfg):
 

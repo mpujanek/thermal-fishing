@@ -172,6 +172,51 @@ def multislice(potential, cfg):
     return psi
 
 
+def multislice_alt(potential, cfg):
+
+    # Precompute the bandwidth limiting mask and the Fresnel propagator
+    bwl_msk = bandwidth_limit(cfg)
+    prop = propagator(cfg)
+
+    # The multislice itself is surprisingly simple:
+    psi = cfg.probe  # Initialize with the probe function
+    for ii in range(cfg.shape[0]):
+        tmp = np.exp(1.j * cfg.sigma * potential[ii, :, :] * cfg.dz)*ifft2(fft2(psi)*prop*bwl_msk)
+        psi = tmp  # Impinging wave for the next slice
+
+    return psi
+
+
+def fds(potential, cfg):
+
+    # Precompute the bandwidth limiting mask and the Fresnel propagator
+    bwl_msk = bandwidth_limit(cfg)
+
+    # The multislice itself is surprisingly simple:
+    psi = np.copy(cfg.probe)  # Initialize with the probe function
+    psi_prev = np.zeros(cfg.probe.shape)   # Initialize with zeros
+
+    Nx, Ny = cfg.shape[1], cfg.shape[2]
+    kx = np.fft.fftfreq(Nx, cfg.dx)  # spatial frequencies along x-axis
+    ky = np.fft.fftfreq(Ny, cfg.dx)  # spatial frequencies along y-axis
+
+    KX, KY = np.meshgrid(kx, ky, indexing="ij")
+    k = KX**2 + KY**2
+
+    c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
+    c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
+    for ii in range(cfg.shape[0]):
+        term1 = ifft2(-4 * np.pi**2 * k * fft2(psi))
+        term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
+        tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
+        psi_next = np.copy(ifft2(fft2(tmp) * bwl_msk))
+
+        psi_prev = np.copy(psi)
+        psi = np.copy(psi_next)
+
+    return psi
+
+
 def crop_dp(dp, cfg):
     # crop the area away that has been zero'd in the bandwidth limitation step
 
@@ -183,7 +228,7 @@ def crop_dp(dp, cfg):
 
 def diffraction_pattern(potential, cfg):
 
-    psi = multislice(potential, cfg)  # Calculate the exit wave of the sample
+    psi = fds(potential, cfg)  # Calculate the exit wave of the sample
 
     dp = np.abs(fft2(psi))**2  # Convert to diffraction space and intensities
 

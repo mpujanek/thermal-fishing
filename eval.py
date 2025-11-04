@@ -1,5 +1,6 @@
 import numpy as np
 
+
 # assume input is 322x322 numpy arrays
 # A is the "ground truth" AKA the Schrodinger solution 
 def rel_error(A, B):
