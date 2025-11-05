@@ -1,6 +1,6 @@
 import numpy as np
 from Settings import Settings
-from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, laplace, propagator_half
+from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, laplace, propagator_half, laplace_n
 
 
 def multislice(potential, cfg):
@@ -199,3 +199,29 @@ def run(solver, potential, alphas, dzs, bin_z=False):
             settings[i].append(cfg)
 
     return psis, settings
+
+
+def fcms(potential, cfg):
+
+    # Precompute the bandwidth limiting mask and the Fresnel propagator
+    bwl_msk = bandwidth_limit(cfg)
+
+    # The multislice itself is surprisingly simple:
+    psi = cfg.probe  # Initialize with the probe function
+    K0 = 1 / cfg.lam
+    a = 2 * np.pi * 1.j * cfg.dz * K0
+    c = 1 / (2 * np.pi * K0)**2
+    for ii in range(cfg.shape[0]):
+        b = 1 + cfg.sigma / (np.pi * K0) * potential[ii, :, :]
+        coef0 = np.exp(a * (np.sqrt(b) - 1))
+        coef1 = a * c * np.exp(a * (np.sqrt(b) - 1)) / (2 * np.sqrt(b))
+        coef2 = a * (a * np.sqrt(b) - 1) * c**2 * np.exp(a * (np.sqrt(b) - 1)) / (8 * np.pow(b, 3/2))
+        coef3 = a * (3 - 3 * a * np.sqrt(b) + a**2 * b) * c**3 * np.exp(a * (np.sqrt(b) - 1)) / (48 * np.pow(b, 5/2))
+        term0 = coef0 * psi
+        term1 = coef1 * laplace(psi)
+        term2 = coef2 * laplace_n(psi, 2)
+        term3 = coef3 * laplace_n(psi, 3)
+        tmp = term0 + term1 + term2 + term3
+        psi = ifft2(fft2(tmp) * bwl_msk)  # Impinging wave for the next slice
+
+    return psi

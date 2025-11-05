@@ -382,13 +382,13 @@ if __name__ == '__main__':
     # potential = amorphous_sample(seed=31415)  # Set the seed so the potential is the same between runs
 
     # Bin the z-direction to test various dz samplings:
-    # potential, dz = bin_z(potential, dz, factor=10)
+    # potential, dz = bin_z(potential, dz, factor=4)
     # Optional: select inner quarter to compute faster during testing by cropping the x- and y-directions
     potential = crop_xy(potential, factor=1)
     # Crop the z-direction if needed
     potential = crop_z(potential, factor=20)
 
-    settings = Settings(ht=10.,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
+    settings = Settings(ht=100.,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
                         # The size and dx of the provided potential are optimized for alpha=20. Keep fixed, especially
                         # in the beginning of the assignment! Later you can vary between 10. and 30. if you're curious.
                         alpha=20.,  # [mrad] convergence angle, 20. is the default.
