@@ -1,6 +1,6 @@
 import numpy as np
 from Settings import Settings
-from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, laplace, laplace_v2, laplace_v3
+from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, laplace, laplace_v2, laplace_v3, propagator_half
 
 
 def multislice(potential, cfg):
@@ -38,7 +38,7 @@ def multislice_v2(potential, cfg):
     # Precompute the bandwidth limiting mask and the Fresnel propagator
     bwl_msk = bandwidth_limit(cfg)
     prop = propagator(cfg)
-    prop_half = prop/2
+    prop_half = propagator_half(cfg)
 
     # The multislice itself is surprisingly simple:
     psi = cfg.probe  # Initialize with the probe function
@@ -117,7 +117,7 @@ def fds_conv_v2(potential, cfg):
     c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
     c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
     for ii in range(cfg.shape[0]):
-        term1 = laplace_v2(psi) * (cfg.dx**2)
+        term1 = laplace_v3(psi) / (cfg.dx**2)
         term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
         tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
         psi_next = np.copy(ifft2(fft2(tmp)*bwl_msk))

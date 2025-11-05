@@ -80,6 +80,16 @@ def propagator(cfg):  # In Fourier space
     return np.exp(-1.j * np.pi * cfg.lam * cfg.dz * usq)
 
 
+def propagator_half(cfg):  # In Fourier space
+    # usq = u**2 + v**2, with u and v coordinates in Fourier space
+
+    n = cfg.shape[-1]
+    u = cfg.du * (np.arange(0, n) - n//2)
+    usq = u[:, None]**2 + u[None, :]**2
+
+    return np.exp(-1.j * np.pi * cfg.lam * cfg.dz /2 * usq)
+
+
 def diffraction_pattern(psi, cfg):
 
     # psi = multislice(potential, cfg)  # Calculate the exit wave of the sample

@@ -6,7 +6,7 @@
 # backend for graphic generation
 import numpy as np
 import matplotlib
-from helpers import laplace, laplace_v2, laplace_v3
+from helpers import laplace, laplace_v2, laplace_v3, propagator_half
 matplotlib.use("Qt5Agg")
 
 # use path from .env
@@ -193,7 +193,7 @@ def multislice_v2(potential, cfg):
     # Precompute the bandwidth limiting mask and the Fresnel propagator
     bwl_msk = bandwidth_limit(cfg)
     prop = propagator(cfg)
-    prop_half = prop/2
+    prop_half = propagator_half(cfg)
 
     # The multislice itself is surprisingly simple:
     psi = cfg.probe  # Initialize with the probe function
@@ -249,7 +249,7 @@ def fds_conv_v2(potential, cfg):
     c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
     c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
     for ii in range(cfg.shape[0]):
-        term1 = laplace_v3(psi) * (cfg.dx**2)
+        term1 = laplace_v3(psi) / (cfg.dx**2)
         term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
         tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
         psi_next = np.copy(ifft2(fft2(tmp)*bwl_msk))
@@ -301,9 +301,11 @@ def crop_dp(dp, cfg):
 
 def diffraction_pattern(potential, cfg):
 
-    #psi = fds_conv_v2(potential, cfg)  # Calculate the exit wave of the sample
-
+    #psi = multislice(potential, cfg)
+    
     psi = multislice_v2(potential, cfg)
+    
+    #psi = fds_conv_v2(potential, cfg)  # Calculate the exit wave of the sample
 
     dp = np.abs(fft2(psi))**2  # Convert to diffraction space and intensities
 
@@ -330,7 +332,7 @@ if __name__ == '__main__':
     # Crop the z-direction if needed
     potential = crop_z(potential, factor=20)
 
-    settings = Settings(ht=30.,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
+    settings = Settings(ht=100.,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
                         # The size and dx of the provided potential are optimized for alpha=20. Keep fixed, especially
                         # in the beginning of the assignment! Later you can vary between 10. and 30. if you're curious.
                         alpha=20.,  # [mrad] convergence angle, 20. is the default.
@@ -347,7 +349,7 @@ if __name__ == '__main__':
     print(np.array(pattern).shape)
 
     # Show the results
-    _, ax = plt.subplots(2, 2)
+    fig, ax = plt.subplots(2, 2)
     ax[0, 0].imshow(np.abs(settings.probe)**2, cmap='gray', interpolation='nearest')
     ax[0, 0].set_title('Electron probe')
     ax[0, 1].imshow(np.sum(potential, axis=0) * settings.sigma * settings.dz, cmap='gray', interpolation='nearest')
@@ -356,4 +358,8 @@ if __name__ == '__main__':
     ax[1, 0].set_title('Diffraction pattern (linear gray scale)')
     ax[1, 1].imshow(np.log(1e9 * np.abs(pattern) + 1.), cmap='gray', interpolation='nearest')
     ax[1, 1].set_title('Diffraction pattern (logarithmic gray scale)')
+    
+    #fig.suptitle("CMS", fontsize=16)
+    #fig.suptitle("FDS", fontsize=16)
+    
     plt.show()
