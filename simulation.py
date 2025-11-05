@@ -167,7 +167,7 @@ def fds_conv_v2(potential, cfg):
 
 
 # x,y factor=1; z cropping up to us (can use factor 5 or 10); vary dz
-def run(solver, potential, alphas, dzs, z_binning=False):
+def run(solver, potential, voltage, alphas, dzs, z_binning=False):
     # Optional: select inner quarter to compute faster during testing by cropping the x- and y-directions
     potential = crop_xy(potential, factor=1)
     # Crop the z-direction because sample too thick
@@ -194,7 +194,7 @@ def run(solver, potential, alphas, dzs, z_binning=False):
             if z_binning:
                 potential, dzs[j] = bin_z(potential, dzs[j], factor=10)
 
-            cfg = Settings(ht=100.,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
+            cfg = Settings(ht=voltage,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
                     # The size and dx of the provided potential are optimized for alpha=20. Keep fixed, especially
                     # in the beginning of the assignment! Later you can vary between 10. and 30. if you're curious.
                     alpha=alphas[i],  # [mrad] convergence angle, 20. is the default.
@@ -212,7 +212,7 @@ def run(solver, potential, alphas, dzs, z_binning=False):
             remaining = total - current
             eta = timedelta(seconds=int(remaining * avg))
 
-            print(f"  Finished in {dt:.2f}s | avg {avg:.2f}s/it | ETA {eta}")
+            print(f"  Finished in {dt:.2f}s | avg {avg:.2f}s/it | block ETA {eta}")
 
             psis[i].append(psi)
             settings[i].append(cfg)
@@ -222,3 +222,37 @@ def run(solver, potential, alphas, dzs, z_binning=False):
           f"(avg {statistics.mean(times):.2f}s/iteration)")
 
     return psis, settings
+
+
+def big_run(methods, voltages, potential, alphas, dzs, z_binning=False):
+    result = {}
+    times = []
+
+    total = len(methods) * len(voltages)
+    current = 0
+    t0_all = time.perf_counter()
+
+    for method in methods:
+        result[method] = {}
+        for voltage in voltages:
+            current += 1
+            t0_iter = time.perf_counter()
+            print(f"\n=== ({current}/{total}) Running full block: {method.__name__} @ {voltage} kV ===")
+
+            psis, settings = run(method, potential, voltage, alphas, dzs, z_binning=z_binning)
+
+            # Timing stats for this (method, voltage) block
+            dt = time.perf_counter() - t0_iter
+            times.append(dt)
+            avg = statistics.mean(times)
+            remaining = total - current
+            eta = timedelta(seconds=int(remaining * avg))
+            print(f"Block finished in {dt:.2f}s | avg/block {avg:.2f}s | total ETA {eta}")
+
+            result[method][voltage] = (psis, settings)
+
+    total_time = time.perf_counter() - t0_all
+    print(f"\nAll {total} blocks finished in {timedelta(seconds=int(total_time))} "
+          f"(avg {statistics.mean(times):.2f}s/block)")
+
+    return result
