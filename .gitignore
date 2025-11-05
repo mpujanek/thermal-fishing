@@ -2,3 +2,4 @@
 venv/
 TUe_data_share/
 __pycache__/
+standalone_multislice.py
