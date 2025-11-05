@@ -1,3 +1,6 @@
 .env
 venv/
 TUe_data_share/
+__pycache__/
+.DS_Store
+standalone_multislice.py
