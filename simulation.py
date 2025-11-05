@@ -3,12 +3,8 @@ import time
 import statistics
 from datetime import timedelta
 from Settings import Settings
-<<<<<<< HEAD
-from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, laplace, propagator_half, bin_z
-=======
-from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, laplace, propagator_half, laplace_n
+from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, laplace, propagator_half, laplace_n, bin_z
 
->>>>>>> Casper3
 
 def multislice(potential, cfg):
 
