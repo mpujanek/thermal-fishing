@@ -4,7 +4,7 @@ import numpy as np
 
 # Import scripts
 from helpers import amorphous_sample
-from simulation import run, multislice, fds
+from simulation import run, multislice, fds, fds_conv
 from visualization import visualize_grid
 from eval import rel_error
 
@@ -23,18 +23,18 @@ alpha = 20.  # [mrad] convergence angle, 20. is the default.
 dz = 20.6 # [pm], default
 
 # Inputs for full run
-alphas = [alpha]
-dzs = [dz/2, dz/4, dz/8]
+alphas = [alpha/2, alpha, 2*alpha, 4*alpha]
+dzs = [dz, dz/2, dz/4, dz/8]
 
-# get multislice results
+# get results
 psis_ms, settings_ms = run(multislice, potential, alphas, dzs)
-
-# get fds results
 psis_fds, settings_fds = run(fds, potential, alphas, dzs)
+psis_fds_conv, settings_fds_conv = run(fds_conv, potential, alphas, dzs)
 
-# visualize result (multislice)
+# visualize results
 visualize_grid(psis_ms, alphas, dzs, settings_ms, label="Multislice")
 visualize_grid(psis_fds, alphas, dzs, settings_fds, label="FDS")
+visualize_grid(psis_fds_conv, alphas, dzs, settings_fds_conv, label="FDS (conv)")
 
 # compare results
 #result = rel_error(ms_pattern, fds_pattern)

@@ -1,6 +1,9 @@
 import numpy as np
+import time
+import statistics
+from datetime import timedelta
 from Settings import Settings
-from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, laplace
+from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, bin_z, laplace
 
 
 def multislice(potential, cfg):
@@ -80,8 +83,7 @@ def fds_conv(potential, cfg):
 
 
 # x,y factor=1; z cropping up to us (can use factor 5 or 10); vary dz
-def run(solver, potential, alphas, dzs, bin_z=False):
-
+def run(solver, potential, alphas, dzs, z_binning=False):
     # Optional: select inner quarter to compute faster during testing by cropping the x- and y-directions
     potential = crop_xy(potential, factor=1)
     # Crop the z-direction because sample too thick
@@ -89,12 +91,23 @@ def run(solver, potential, alphas, dzs, bin_z=False):
 
     psis = []
     settings = []
+
+    total = len(alphas) * len(dzs)
+    times = []
+    t0_all = time.perf_counter()
+
+    current = 0
     for i in range(len(alphas)):
         psis.append([])
         settings.append([])
         for j in range(len(dzs)):
+            current += 1
+            t0_iter = time.perf_counter()
+
+            print(f"\n[{current}/{total}] Running {solver.__name__} on alpha={alphas[i]}, dz={dzs[j]}")
+
             # Bin the z-direction to make computation faster:
-            if bin_z:
+            if z_binning:
                 potential, dzs[j] = bin_z(potential, dzs[j], factor=10)
 
             cfg = Settings(ht=100.,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
@@ -108,9 +121,20 @@ def run(solver, potential, alphas, dzs, bin_z=False):
             
             psi = solver(potential, cfg)
 
-            print(j)
+            # Timing stats
+            dt = time.perf_counter() - t0_iter
+            times.append(dt)
+            avg = statistics.mean(times)
+            remaining = total - current
+            eta = timedelta(seconds=int(remaining * avg))
+
+            print(f"  Finished in {dt:.2f}s | avg {avg:.2f}s/it | ETA {eta}")
 
             psis[i].append(psi)
             settings[i].append(cfg)
+
+    total_time = time.perf_counter() - t0_all
+    print(f"\nAll {total} iterations finished in {timedelta(seconds=int(total_time))} "
+          f"(avg {statistics.mean(times):.2f}s/iteration)")
 
     return psis, settings
