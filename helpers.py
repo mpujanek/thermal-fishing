@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from scipy import signal
 
@@ -97,6 +99,32 @@ def diffraction_pattern(psi, cfg):
     dp = np.abs(fft2(psi))**2  # Convert to diffraction space and intensities
 
     return crop_dp(dp, cfg)
+
+
+LAPLACIAN_KERNEL = 1 / 4 * np.array([[1, 2, 1], [2, -12, 2], [1, 2, 1]])
+BOUNDARY_MODE = "symm"
+CONVOLVE_MODE = "same"
+
+
+def laplace_n(f, n):
+    out = f.copy()  # might be inefficient, but assignment is required I think (Luc)
+    for _ in range(n):
+        out = signal.convolve2d(f, LAPLACIAN_KERNEL, boundary=BOUNDARY_MODE, mode=CONVOLVE_MODE)
+    return out
+
+
+def factorial_power(x, n):
+    # Computes the factorial power function of x^(n)
+    result = 1
+    for i in range(n):
+        result *= x - i
+
+    return result
+
+
+def root_series(a, b, c, n):
+    # Computes the nth order term of the Taylor series of a*sqrt(b+cx)
+    return a * b**(1/2 - n) * c**n * factorial_power(1/2, n) / math.factorial(n)
 
 
 def laplace(f, method = 1):

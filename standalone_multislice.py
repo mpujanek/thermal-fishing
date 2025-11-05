@@ -6,7 +6,7 @@
 # backend for graphic generation
 import numpy as np
 import matplotlib
-from helpers import laplace, propagator_half
+from helpers import *
 matplotlib.use("Qt5Agg")
 
 # use path from .env
@@ -173,6 +173,32 @@ def multislice(potential, cfg):
     return psi
 
 
+def fcms(potential, cfg):
+
+    # Precompute the bandwidth limiting mask and the Fresnel propagator
+    bwl_msk = bandwidth_limit(cfg)
+
+    # The multislice itself is surprisingly simple:
+    psi = cfg.probe  # Initialize with the probe function
+    K0 = 1 / cfg.lam
+    a = 2 * np.pi * 1.j * cfg.dz * K0
+    c = 1 / (2 * np.pi * K0)**2
+    for ii in range(cfg.shape[0]):
+        b = 1 + cfg.sigma / (np.pi * K0) * potential[ii, :, :]
+        coef0 = np.exp(a * (np.sqrt(b) - 1))
+        coef1 = a * c * np.exp(a * (np.sqrt(b) - 1)) / (2 * np.sqrt(b))
+        coef2 = a * (a * np.sqrt(b) - 1) * c**2 * np.exp(a * (np.sqrt(b) - 1)) / (8 * np.pow(b, 3/2))
+        coef3 = a * (3 - 3 * a * np.sqrt(b) + a**2 * b) * c**3 * np.exp(a * (np.sqrt(b) - 1)) / (48 * np.pow(b, 5/2))
+        term0 = coef0 * psi
+        term1 = coef1 * laplace(psi)
+        term2 = coef2 * laplace_n(psi, 2)
+        term3 = coef3 * laplace_n(psi, 3)
+        tmp = term0 + term1 + term2 + term3
+        psi = ifft2(fft2(tmp) * bwl_msk)  # Impinging wave for the next slice
+
+    return psi
+
+
 def multislice_alt(potential, cfg):
 
     # Precompute the bandwidth limiting mask and the Fresnel propagator
@@ -197,13 +223,13 @@ def multislice_v2(potential, cfg):
 
     # The multislice itself is surprisingly simple:
     psi = cfg.probe  # Initialize with the probe function
-    
+
     psi = ifft2(fft2(psi) * prop_half * bwl_msk)
-    
+
     for ii in range(cfg.shape[0]-1):
         tmp = fft2(np.exp(1.j * cfg.sigma * potential[ii, :, :] * cfg.dz) * psi)
         psi = ifft2(tmp * prop * bwl_msk)  # Impinging wave for the next slice
-        
+
     tmp = fft2(np.exp(1.j * cfg.sigma * potential[-1, :, :] * cfg.dz) * psi)
     psi = ifft2(tmp * prop_half * bwl_msk)
 
@@ -241,11 +267,11 @@ def fds_conv_v2(potential, cfg):
 
     # Initial layer is given
     psi_prev = np.copy(cfg.probe)  # Initialize with the probe function
-    
+
     # First layer computed through standard multislice
     tmp = fft2(np.exp(1.j * cfg.sigma * potential[0, :, :] * cfg.dz) * psi_prev)
     psi = ifft2(tmp * prop * bwl_msk)
-    
+
     c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
     c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
     for ii in range(1,cfg.shape[0]):
@@ -298,7 +324,7 @@ def fds_v2(potential, cfg):
 
     # Initial layer is given
     psi_prev = np.copy(cfg.probe)  # Initialize with the probe function
-    
+
     # First layer computed through standard multislice
     tmp = fft2(np.exp(1.j * cfg.sigma * potential[0, :, :] * cfg.dz) * psi_prev)
     psi = ifft2(tmp * prop * bwl_msk)
@@ -335,11 +361,7 @@ def crop_dp(dp, cfg):
 
 def diffraction_pattern(potential, cfg):
 
-    #psi = multislice(potential, cfg)
-    
-    #psi = multislice_v2(potential, cfg)
-    
-    psi = fds_v2(potential, cfg)  # Calculate the exit wave of the sample
+    psi = fcms(potential, cfg)  # Calculate the exit wave of the sample
 
     dp = np.abs(fft2(psi))**2  # Convert to diffraction space and intensities
 
@@ -360,7 +382,7 @@ if __name__ == '__main__':
     # potential = amorphous_sample(seed=31415)  # Set the seed so the potential is the same between runs
 
     # Bin the z-direction to test various dz samplings:
-    # potential, dz = bin_z(potential, dz, factor=10)
+    # potential, dz = bin_z(potential, dz, factor=4)
     # Optional: select inner quarter to compute faster during testing by cropping the x- and y-directions
     potential = crop_xy(potential, factor=1)
     # Crop the z-direction if needed
@@ -392,8 +414,8 @@ if __name__ == '__main__':
     ax[1, 0].set_title('Diffraction pattern (linear gray scale)')
     ax[1, 1].imshow(np.log(1e9 * np.abs(pattern) + 1.), cmap='gray', interpolation='nearest')
     ax[1, 1].set_title('Diffraction pattern (logarithmic gray scale)')
-    
+
     #fig.suptitle("CMS", fontsize=16)
     #fig.suptitle("FDS", fontsize=16)
-    
+
     plt.show()
