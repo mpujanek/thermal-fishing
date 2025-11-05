@@ -99,18 +99,14 @@ def diffraction_pattern(psi, cfg):
     return crop_dp(dp, cfg)
 
 
-def laplace(f):
-    # 9 point stencil for gamma = 1/2
-    kernel = 1/4*np.array([[1, 2, 1], [2, -12, 2], [1, 2, 1]])
-    return signal.convolve2d(f, kernel, boundary="symm", mode="same")
-
-
-def laplace_v2(f):
-    # 5 point stencil
-    kernel = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])
-    return signal.convolve2d(f, kernel, boundary="symm", mode="same")
-
-def laplace_v3(f):
-    # 9 point stencil for gamma = 1/3
-    kernel = 1/6*np.array([[1, 4, 1], [4, -20, 4], [1, 4, 1]])
+def laplace(f, method = 1):
+    if method == 1:
+        # 5 point stencil
+        kernel = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])
+    elif method == 2:
+        # 9 point stencil for gamma = 1/2
+        kernel = 1/4*np.array([[1, 2, 1], [2, -12, 2], [1, 2, 1]])
+    elif method == 3:
+        # 9 point stencil for gamma = 1/3
+        kernel = 1/6*np.array([[1, 4, 1], [4, -20, 4], [1, 4, 1]])
     return signal.convolve2d(f, kernel, boundary="symm", mode="same")

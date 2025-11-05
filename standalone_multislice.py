@@ -6,7 +6,7 @@
 # backend for graphic generation
 import numpy as np
 import matplotlib
-from helpers import laplace, laplace_v2, laplace_v3, propagator_half
+from helpers import laplace, propagator_half
 matplotlib.use("Qt5Agg")
 
 # use path from .env
@@ -248,8 +248,8 @@ def fds_conv_v2(potential, cfg):
     
     c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
     c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
-    for ii in range(cfg.shape[0]):
-        term1 = laplace_v3(psi) / (cfg.dx**2)
+    for ii in range(1,cfg.shape[0]):
+        term1 = laplace(psi, method = 3) / (cfg.dx**2)
         term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
         tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
         psi_next = np.copy(ifft2(fft2(tmp)*bwl_msk))
@@ -290,6 +290,40 @@ def fds(potential, cfg):
     return psi
 
 
+def fds_v2(potential, cfg):
+
+    # Precompute the bandwidth limiting mask and the Fresnel propagator
+    bwl_msk = bandwidth_limit(cfg)
+    prop = propagator(cfg)
+
+    # Initial layer is given
+    psi_prev = np.copy(cfg.probe)  # Initialize with the probe function
+    
+    # First layer computed through standard multislice
+    tmp = fft2(np.exp(1.j * cfg.sigma * potential[0, :, :] * cfg.dz) * psi_prev)
+    psi = ifft2(tmp * prop * bwl_msk)
+
+    Nx, Ny = cfg.shape[1], cfg.shape[2]
+    kx = np.fft.fftfreq(Nx, cfg.dx)  # spatial frequencies along x-axis
+    ky = np.fft.fftfreq(Ny, cfg.dx)  # spatial frequencies along y-axis
+
+    KX, KY = np.meshgrid(kx, ky, indexing="ij")
+    k = KX**2 + KY**2
+
+    c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
+    c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
+    for ii in range(1, cfg.shape[0]):
+        term1 = ifft2(-4 * np.pi**2 * k * fft2(psi))
+        term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
+        tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
+        psi_next = np.copy(ifft2(fft2(tmp)*bwl_msk))
+
+        psi_prev = np.copy(psi)
+        psi = np.copy(psi_next)
+
+    return psi
+
+
 def crop_dp(dp, cfg):
     # crop the area away that has been zero'd in the bandwidth limitation step
 
@@ -303,9 +337,9 @@ def diffraction_pattern(potential, cfg):
 
     #psi = multislice(potential, cfg)
     
-    psi = multislice_v2(potential, cfg)
+    #psi = multislice_v2(potential, cfg)
     
-    #psi = fds_conv_v2(potential, cfg)  # Calculate the exit wave of the sample
+    psi = fds_v2(potential, cfg)  # Calculate the exit wave of the sample
 
     dp = np.abs(fft2(psi))**2  # Convert to diffraction space and intensities
 
