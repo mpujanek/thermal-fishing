@@ -6,7 +6,7 @@
 # backend for graphic generation
 import numpy as np
 import matplotlib
-from helpers import laplace
+from helpers import laplace, laplace_v2
 matplotlib.use("Qt5Agg")
 
 # use path from .env
@@ -188,6 +188,28 @@ def multislice_alt(potential, cfg):
     return psi
 
 
+def multislice_v2(potential, cfg):
+
+    # Precompute the bandwidth limiting mask and the Fresnel propagator
+    bwl_msk = bandwidth_limit(cfg)
+    prop = propagator(cfg)
+    prop_half = prop/2
+
+    # The multislice itself is surprisingly simple:
+    psi = cfg.probe  # Initialize with the probe function
+    
+    psi = ifft2(fft2(psi) * prop_half * bwl_msk)
+    
+    for ii in range(cfg.shape[0]-1):
+        tmp = fft2(np.exp(1.j * cfg.sigma * potential[ii, :, :] * cfg.dz) * psi)
+        psi = ifft2(tmp * prop * bwl_msk)  # Impinging wave for the next slice
+        
+    tmp = fft2(np.exp(1.j * cfg.sigma * potential[-1, :, :] * cfg.dz) * psi)
+    psi = ifft2(tmp * prop_half * bwl_msk)
+
+    return psi
+
+
 def fds_conv(potential, cfg):
 
     # Precompute the bandwidth limiting mask and the Fresnel propagator
@@ -201,6 +223,33 @@ def fds_conv(potential, cfg):
     c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
     for ii in range(cfg.shape[0]):
         term1 = laplace(psi)
+        term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
+        tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
+        psi_next = np.copy(ifft2(fft2(tmp)*bwl_msk))
+
+        psi_prev = np.copy(psi)
+        psi = np.copy(psi_next)
+
+    return psi
+
+
+def fds_conv_v2(potential, cfg):
+
+    # Precompute the bandwidth limiting mask and the Fresnel propagator
+    bwl_msk = bandwidth_limit(cfg)
+    prop = propagator(cfg)
+
+    # Initial layer is given
+    psi_prev = np.copy(cfg.probe)  # Initialize with the probe function
+    
+    # First layer computed through standard multislice
+    tmp = fft2(np.exp(1.j * cfg.sigma * potential[0, :, :] * cfg.dz) * psi_prev)
+    psi = ifft2(tmp * prop * bwl_msk)
+    
+    c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
+    c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
+    for ii in range(cfg.shape[0]):
+        term1 = laplace_v2(psi) * (cfg.dx**2)
         term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
         tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
         psi_next = np.copy(ifft2(fft2(tmp)*bwl_msk))
@@ -254,6 +303,8 @@ def diffraction_pattern(potential, cfg):
 
     psi = fds_conv(potential, cfg)  # Calculate the exit wave of the sample
 
+    #psi = multislice_v2(potential, cfg)
+
     dp = np.abs(fft2(psi))**2  # Convert to diffraction space and intensities
 
     return crop_dp(dp, cfg)
@@ -279,7 +330,7 @@ if __name__ == '__main__':
     # Crop the z-direction if needed
     potential = crop_z(potential, factor=20)
 
-    settings = Settings(ht=100.,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
+    settings = Settings(ht=30.,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
                         # The size and dx of the provided potential are optimized for alpha=20. Keep fixed, especially
                         # in the beginning of the assignment! Later you can vary between 10. and 30. if you're curious.
                         alpha=20.,  # [mrad] convergence angle, 20. is the default.
