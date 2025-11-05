@@ -1,6 +1,6 @@
 import numpy as np
 from Settings import Settings
-from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, laplace, laplace_v2
+from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, laplace, laplace_v2, laplace_v3
 
 
 def multislice(potential, cfg):

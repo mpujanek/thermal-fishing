@@ -6,7 +6,7 @@
 # backend for graphic generation
 import numpy as np
 import matplotlib
-from helpers import laplace, laplace_v2
+from helpers import laplace, laplace_v2, laplace_v3
 matplotlib.use("Qt5Agg")
 
 # use path from .env
@@ -249,7 +249,7 @@ def fds_conv_v2(potential, cfg):
     c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
     c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
     for ii in range(cfg.shape[0]):
-        term1 = laplace_v2(psi) * (cfg.dx**2)
+        term1 = laplace_v3(psi) * (cfg.dx**2)
         term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
         tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
         psi_next = np.copy(ifft2(fft2(tmp)*bwl_msk))
@@ -301,9 +301,9 @@ def crop_dp(dp, cfg):
 
 def diffraction_pattern(potential, cfg):
 
-    psi = fds_conv(potential, cfg)  # Calculate the exit wave of the sample
+    #psi = fds_conv_v2(potential, cfg)  # Calculate the exit wave of the sample
 
-    #psi = multislice_v2(potential, cfg)
+    psi = multislice_v2(potential, cfg)
 
     dp = np.abs(fft2(psi))**2  # Convert to diffraction space and intensities
 
