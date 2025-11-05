@@ -116,7 +116,9 @@ def fds_conv_v2(potential, cfg):
     
     c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
     c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
-    for ii in range(1,cfg.shape[0]):
+    
+    # start at ii=1 since we do the 0th iteration with multislice
+    for ii in range(1, cfg.shape[0]):
         term1 = laplace_v3(psi) / (cfg.dx**2)
         term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
         tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
