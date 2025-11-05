@@ -1,6 +1,6 @@
 import numpy as np
 from Settings import Settings
-from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, laplace, laplace_v2, laplace_v3, propagator_half
+from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, laplace, propagator_half
 
 
 def multislice(potential, cfg):
@@ -78,6 +78,40 @@ def fds(potential, cfg):
     return psi
 
 
+def fds_v2(potential, cfg):
+
+    # Precompute the bandwidth limiting mask and the Fresnel propagator
+    bwl_msk = bandwidth_limit(cfg)
+    prop = propagator(cfg)
+
+    # Initial layer is given
+    psi_prev = np.copy(cfg.probe)  # Initialize with the probe function
+    
+    # First layer computed through standard multislice
+    tmp = fft2(np.exp(1.j * cfg.sigma * potential[0, :, :] * cfg.dz) * psi_prev)
+    psi = ifft2(tmp * prop * bwl_msk)
+
+    Nx, Ny = cfg.shape[1], cfg.shape[2]
+    kx = np.fft.fftfreq(Nx, cfg.dx)  # spatial frequencies along x-axis
+    ky = np.fft.fftfreq(Ny, cfg.dx)  # spatial frequencies along y-axis
+
+    KX, KY = np.meshgrid(kx, ky, indexing="ij")
+    k = KX**2 + KY**2
+
+    c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
+    c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
+    for ii in range(1, cfg.shape[0]):
+        term1 = ifft2(-4 * np.pi**2 * k * fft2(psi))
+        term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
+        tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
+        psi_next = np.copy(ifft2(fft2(tmp)*bwl_msk))
+
+        psi_prev = np.copy(psi)
+        psi = np.copy(psi_next)
+
+    return psi
+
+
 def fds_conv(potential, cfg):
 
     # Precompute the bandwidth limiting mask and the Fresnel propagator
@@ -90,7 +124,7 @@ def fds_conv(potential, cfg):
     c_plus = 1+2*np.pi*1j*cfg.dz/cfg.lam
     c_minus = 1-2*np.pi*1j*cfg.dz/cfg.lam
     for ii in range(cfg.shape[0]):
-        term1 = laplace(psi)
+        term1 = laplace(psi, method =2)
         term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
         tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
         psi_next = np.copy(ifft2(fft2(tmp)*bwl_msk))
@@ -119,7 +153,7 @@ def fds_conv_v2(potential, cfg):
     
     # start at ii=1 since we do the 0th iteration with multislice
     for ii in range(1, cfg.shape[0]):
-        term1 = laplace_v3(psi) / (cfg.dx**2)
+        term1 = laplace(psi, method=3) / (cfg.dx**2)
         term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
         tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
         psi_next = np.copy(ifft2(fft2(tmp)*bwl_msk))
