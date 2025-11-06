@@ -101,18 +101,6 @@ def diffraction_pattern(psi, cfg):
     return crop_dp(dp, cfg)
 
 
-LAPLACIAN_KERNEL = 1 / 4 * np.array([[1, 2, 1], [2, -12, 2], [1, 2, 1]])
-BOUNDARY_MODE = "symm"
-CONVOLVE_MODE = "same"
-
-
-def laplace_n(f, n):
-    out = f.copy()  # might be inefficient, but assignment is required I think (Luc)
-    for _ in range(n):
-        out = signal.convolve2d(f, LAPLACIAN_KERNEL, boundary=BOUNDARY_MODE, mode=CONVOLVE_MODE)
-    return out
-
-
 def factorial_power(x, n):
     # Computes the factorial power function of x^(n)
     result = 1
@@ -127,7 +115,9 @@ def root_series(a, b, c, n):
     return a * b**(1/2 - n) * c**n * factorial_power(1/2, n) / math.factorial(n)
 
 
-def laplace(f, method = 1):
+def laplace(f, 
+            method = 2, BOUNDARY_MODE = "symm", CONVOLVE_MODE = "same"):
+    
     if method == 1:
         # 5 point stencil
         kernel = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])
@@ -137,4 +127,16 @@ def laplace(f, method = 1):
     elif method == 3:
         # 9 point stencil for gamma = 1/3
         kernel = 1/6*np.array([[1, 4, 1], [4, -20, 4], [1, 4, 1]])
-    return signal.convolve2d(f, kernel, boundary="symm", mode="same")
+        
+    conv = signal.convolve2d(f, kernel, boundary=BOUNDARY_MODE, mode=CONVOLVE_MODE)
+    
+    return conv
+
+
+def laplace_n(f, n,
+              method = 2, BOUNDARY_MODE = "symm", CONVOLVE_MODE = "same"):
+    
+    for _ in range(n):
+        f = laplace(f, 
+                    method, BOUNDARY_MODE, CONVOLVE_MODE)
+    return f
