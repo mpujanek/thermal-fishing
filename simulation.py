@@ -220,21 +220,21 @@ def run(solver, potential, voltage, alphas, dzs):
             current += 1
             t0_iter = time.perf_counter()
 
-            print(f"\n[{current}/{total}] Running {solver.__name__} on alpha={alphas[i]}, dz={dzs[j]*20.6}")
-
             # Bin the z-direction:
-            potential, dz = bin_z(potential, dz, factor=dzs[j])
+            potential_tmp, dz_tmp = bin_z(potential, dz, factor=dzs[j])
+
+            print(f"\n[{current}/{total}] Running {solver.__name__} on alpha={alphas[i]}, dz={dz_tmp}")
 
             cfg = Settings(ht=voltage,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
                     # The size and dx of the provided potential are optimized for alpha=20. Keep fixed, especially
                     # in the beginning of the assignment! Later you can vary between 10. and 30. if you're curious.
                     alpha=alphas[i],  # [mrad] convergence angle, 20. is the default.
-                    shape=potential.shape,  # shape of the potential array: z-, y- and x-direction
+                    shape=potential_tmp.shape,  # shape of the potential array: z-, y- and x-direction
                     dx=dx,  # [pm] sampling size in y and x direction
-                    dz=dz,  # [pm] sampling size in z direction, same as dx when None
+                    dz=dz_tmp,  # [pm] sampling size in z direction, same as dx when None
                     )
             
-            psi = solver(potential, cfg)
+            psi = solver(potential_tmp, cfg)
 
             # Timing stats
             dt = time.perf_counter() - t0_iter

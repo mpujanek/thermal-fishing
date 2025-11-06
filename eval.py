@@ -84,6 +84,14 @@ def deviation_matrix(methods, labels, ground_truth, voltages, run_result, alphas
     plt.show()
 
 
+"""
+Plot a matrix of deviation curves with one subplot per (method, voltage) pair.
+Each subplot shows different alphas as curves over dz.
+
+Rows: voltages
+Columns: methods
+Curves: alphas
+"""
 def deviation_matrix(methods, labels, ground_truth, voltages, run_result, alphas, dzs):
     # Allow run_result to be either a dict or a path to a saved file
     if isinstance(run_result, (str, Path)):
@@ -107,7 +115,7 @@ def deviation_matrix(methods, labels, ground_truth, voltages, run_result, alphas
     # rows = voltages, cols = methods; share axes across all plots
     fig, axes = plt.subplots(
         len(voltages), len(methods),
-        squeeze=False, sharex=True, sharey=True,
+        squeeze=False, sharex=False, sharey=False,
         figsize=(4*len(methods), 3*len(voltages)),
         constrained_layout=True  # better spacing with an external legend
     )
@@ -175,3 +183,101 @@ def deviation_matrix(methods, labels, ground_truth, voltages, run_result, alphas
     fig.set_constrained_layout_pads(w_pad=0.02, h_pad=0.02, wspace=0.02, hspace=0.02)
 
     plt.show()
+
+
+
+"""
+Plot a matrix of deviation curves with one subplot per (alpha, voltage) pair.
+Each subplot shows different methods as curves over dz.
+
+Rows: voltages
+Columns: alphas
+Curves: methods
+"""
+def deviation_matrix_by_alpha(methods, labels, ground_truth, voltages, run_result, alphas, dzs, filename):
+
+    # Allow run_result to be either a dict or a path to a saved file
+    if isinstance(run_result, (str, Path)):
+        path = Path(run_result)
+        print(f"Loading run results from {path} ...")
+        if path.suffix == ".pkl":
+            with open(path, "rb") as f:
+                run_result = pickle.load(f)
+        elif path.suffix == ".json":
+            import json
+            with open(path, "r") as f:
+                run_result = json.load(f)
+        else:
+            raise ValueError(f"Unsupported file type: {path.suffix}")
+        print("Loaded successfully.")
+
+    # Map to method names
+    methods = [method.__name__ for method in methods]
+    ground_truth = ground_truth.__name__
+
+    # rows = voltages, cols = alphas; share axes
+    fig, axes = plt.subplots(
+        len(voltages), len(alphas),
+        squeeze=False, sharex=False, sharey=True,
+        figsize=(4 * len(alphas), 3 * len(voltages)),
+        constrained_layout=True
+    )
+
+    # Compute scaled dzs and x-limits
+    dzs = [20.6 * dz for dz in dzs]
+    dz_min, dz_max = min(dzs), max(dzs)
+    x_range = max(1e-9, dz_max - dz_min)
+    x_pad = 0.05 * x_range
+    x_left = dz_max + x_pad
+    x_right = dz_min - x_pad
+
+    for a_idx, alpha in enumerate(alphas):
+        for j, voltage in enumerate(voltages):
+            ax = axes[j, a_idx]
+
+            # access ground truth for this voltage
+            psis_gt = run_result[ground_truth][voltage][0]
+            settings_gt = run_result[ground_truth][voltage][1]
+
+            for m_idx, method in enumerate(methods):
+                psis = run_result[method][voltage][0]
+                settings = run_result[method][voltage][1]
+
+                # Compute deviations for each dz at this alpha
+                y_vals = []
+                for d_idx, dz in enumerate(dzs):
+                    res_psi = psis[a_idx][d_idx]
+                    gt_psi = psis_gt[a_idx][d_idx]
+                    res_settings = settings[a_idx][d_idx]
+                    gt_settings = settings_gt[a_idx][d_idx]
+                    dev = deviation(res_psi, res_settings, gt_psi, gt_settings)
+                    y_vals.append(dev)
+
+                ax.plot(dzs, y_vals, marker='o', markersize=3, linewidth=1.5, label=labels[m_idx])
+
+            # Titles/labels
+            ax.set_title(f"α={alpha} @ {voltage} kV")
+            ax.grid(True, alpha=0.3)
+            ax.set_xlim(x_left, x_right)
+            ax.set_yscale('log')
+            ax.margins(x=0.03, y=0.10)
+
+    # Shared axis labels (outer edges only)
+    for col in range(len(alphas)):
+        axes[-1, col].set_xlabel("dz")
+    for row in range(len(voltages)):
+        axes[row, 0].set_ylabel("Deviation from multislice")
+
+    # Build a single shared legend using method names
+    handles, legend_labels = axes[0, 0].get_legend_handles_labels()
+    if handles:
+        fig.legend(
+            handles, legend_labels,
+            loc="lower center",
+            ncol=len(methods),                # spread methods horizontally
+            frameon=True,
+            title="Methods",
+            bbox_to_anchor=(0.5, -0.03)       # slightly below the plots
+        )
+
+    plt.savefig(filename, bbox_inches="tight", dpi=300)
