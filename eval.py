@@ -113,7 +113,7 @@ def deviation_matrix(methods, labels, ground_truth, voltages, run_result, alphas
     )
 
     # Precompute x-limits: start around 20 if applicable, and invert (large -> small)
-    dzs = list(dzs)
+    dzs = [20.6 * dz for dz in dzs]
     dz_min, dz_max = min(dzs), max(dzs)
     x_range = max(1e-9, dz_max - dz_min)
     x_pad = 0.05 * x_range  # 5% padding

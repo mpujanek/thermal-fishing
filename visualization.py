@@ -36,6 +36,6 @@ def visualize_grid(psis, alphas, dzs, settings, label=None):
             pattern = diffraction_pattern(psis[i][j], settings[i][j])
 
             ax[i, j].imshow(np.log(1e9 * np.abs(pattern) + 1.), cmap='gray', interpolation='nearest')
-            ax[i, j].set_title(f'alpha = {alphas[i]:.2f}mrad, dz = {dzs[j]:.2f}pm')
+            ax[i, j].set_title(f'alpha = {alphas[i]:.2f}mrad, dz = {dzs[j]*20.6:.2f}pm')
 
     plt.show()

@@ -195,11 +195,15 @@ def fcms(potential, cfg):
 
 
 # x,y factor=1; z cropping up to us (can use factor 5 or 10); vary dz
-def run(solver, potential, voltage, alphas, dzs, z_binning=False):
+def run(solver, potential, voltage, alphas, dzs):
     # Optional: select inner quarter to compute faster during testing by cropping the x- and y-directions
     potential = crop_xy(potential, factor=1)
     # Crop the z-direction because sample too thick
     potential = crop_z(potential, factor=10)
+
+    # default values [pm]
+    dx = 20.6
+    dz = 20.6
 
     psis = []
     settings = []
@@ -216,19 +220,18 @@ def run(solver, potential, voltage, alphas, dzs, z_binning=False):
             current += 1
             t0_iter = time.perf_counter()
 
-            print(f"\n[{current}/{total}] Running {solver.__name__} on alpha={alphas[i]}, dz={dzs[j]}")
+            print(f"\n[{current}/{total}] Running {solver.__name__} on alpha={alphas[i]}, dz={dzs[j]*20.6}")
 
-            # Bin the z-direction to make computation faster:
-            if z_binning:
-                potential, dzs[j] = bin_z(potential, dzs[j], factor=10)
+            # Bin the z-direction:
+            potential, dz = bin_z(potential, dz, factor=dzs[j])
 
             cfg = Settings(ht=voltage,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
                     # The size and dx of the provided potential are optimized for alpha=20. Keep fixed, especially
                     # in the beginning of the assignment! Later you can vary between 10. and 30. if you're curious.
                     alpha=alphas[i],  # [mrad] convergence angle, 20. is the default.
                     shape=potential.shape,  # shape of the potential array: z-, y- and x-direction
-                    dx=20.6,  # [pm] sampling size in y and x direction
-                    dz=dzs[j],  # [pm] sampling size in z direction, same as dx when None
+                    dx=dx,  # [pm] sampling size in y and x direction
+                    dz=dz,  # [pm] sampling size in z direction, same as dx when None
                     )
             
             psi = solver(potential, cfg)
@@ -252,7 +255,7 @@ def run(solver, potential, voltage, alphas, dzs, z_binning=False):
     return psis, settings
 
 
-def big_run(methods, voltages, potential, alphas, dzs, z_binning=False, save_path="results.pkl"):
+def big_run(methods, voltages, potential, alphas, dzs, save_path="results.pkl"):
     result = {}
     times = []
 
@@ -267,7 +270,7 @@ def big_run(methods, voltages, potential, alphas, dzs, z_binning=False, save_pat
             t0_iter = time.perf_counter()
             print(f"\n=== ({current}/{total}) Running full block: {method.__name__} @ {voltage} kV ===")
 
-            psis, settings = run(method, potential, voltage, alphas, dzs, z_binning=z_binning)
+            psis, settings = run(method, potential, voltage, alphas, dzs)
 
             # Timing stats
             dt = time.perf_counter() - t0_iter
