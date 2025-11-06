@@ -127,7 +127,7 @@ def root_series(a, b, c, n):
     return a * b**(1/2 - n) * c**n * factorial_power(1/2, n) / math.factorial(n)
 
 
-def laplace(f, method = 1):
+def laplace(f, method = 2):
     if method == 1:
         # 5 point stencil
         kernel = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])

@@ -4,7 +4,7 @@ import numpy as np
 
 # Import scripts
 from helpers import amorphous_sample
-from simulation import run, big_run, multislice, fds, fds_conv, fds_v2, fds_conv_v2, multislice_v2
+from simulation import run, big_run, multislice, fds, fds_conv, fds_v2, fds_conv_v2, multislice_v2, fcms
 from visualization import visualize_grid
 from eval import deviation_matrix
 
@@ -21,21 +21,39 @@ potential = np.load(path)
 # Set params for full run
 dz = 20.6 # [pm], default
 
-alphas = [10.] # [mrad] convergence angle, 20. is the default.
-dzs = [dz/8, dz/16, dz/32, dz/64] #, dz/4, dz/8]
+#alphas = [10., 20., 30.] # [mrad] convergence angle, 20. is the default.
+alphas = [10.] #, 20., 30.]
+dzs = [dz] #[4*dz, 2*dz, dz] 
 
 methods = [fds_conv_v2]
 labels = ["FDS Conv v2"]
 ground_truth = multislice
-voltages = [100.] # kV, 100. is the default
+voltages = [100.] #, 50., 30.] # kV, 100. is the default
 
 # get results
-#psis_ms, settings_ms = run(multislice, potential, alphas, dzs)
-results = big_run(methods + [ground_truth], voltages, potential, alphas, dzs)
+#psis_fcms, settings_fcms = run(fcms, potential, 100., alphas, dzs)
+#psis_fcms50, settings_fcms50 = run(fcms, potential, 50., alphas, dzs)
+
+#psis_fdsconv, settings_fdsconv = run(fds_conv_v2, potential, 100., alphas, dzs)
+#psis_fdsconv50, settings_fdsconv50 = run(fds_conv_v2, potential, 50., alphas, dzs)
+
+#psis_ms, settings_ms = run(multislice, potential, 100., alphas, dzs)
+#psis_ms50, settings_ms50 = run(multislice, potential, 50., alphas, dzs)
+
+save_path = "test.pkl"
+results = big_run(methods + [ground_truth], voltages, potential, alphas, dzs, z_binning=False, save_path=save_path)
 
 # visualize results
-#visualize_grid(psis_ms, alphas, dzs, settings_ms, label="Multislice (50kV)")
-deviation_matrix(methods, labels, ground_truth, voltages, results, alphas, dzs)
+#visualize_grid(psis_fcms, alphas, dzs, settings_fcms, label="FCMS (100kV)")
+#visualize_grid(psis_fcms50, alphas, dzs, settings_fcms50, label="FCMS (50kV)")
+
+#visualize_grid(psis_fdsconv, alphas, dzs, settings_fdsconv, label="FDS Conv v2 (100kV)")
+#visualize_grid(psis_fdsconv50, alphas, dzs, settings_fdsconv50, label="FDS Conv v2 (50kV)")
+
+#visualize_grid(psis_ms, alphas, dzs, settings_ms, label="Multislice (100kV)")
+#visualize_grid(psis_ms50, alphas, dzs, settings_ms50, label="Multislice (50kV)")
+
+deviation_matrix(methods, labels, ground_truth, voltages, save_path, alphas, dzs)
 
 # compare results
 #result = rel_error(ms_pattern, fds_pattern)

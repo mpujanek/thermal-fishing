@@ -2,6 +2,7 @@ import numpy as np
 import time
 import statistics
 from datetime import timedelta
+import pickle
 from Settings import Settings
 from helpers import bandwidth_limit, propagator, fft2, ifft2, crop_xy, crop_z, laplace, propagator_half, laplace_n, bin_z
 
@@ -156,7 +157,7 @@ def fds_conv_v2(potential, cfg):
     
     # start at ii=1 since we do the 0th iteration with multislice
     for ii in range(1, cfg.shape[0]):
-        term1 = laplace(psi, method=3) / (cfg.dx**2)
+        term1 = laplace(psi) / (cfg.dx**2)
         term2 = 4 * np.pi * cfg.sigma / cfg.lam * potential[ii, :, :] * psi
         tmp = 1 / c_plus * (2 * psi - cfg.dz**2 * (term1 + term2)) - c_minus / c_plus * psi_prev
         psi_next = np.copy(ifft2(fft2(tmp)*bwl_msk))
@@ -251,7 +252,7 @@ def run(solver, potential, voltage, alphas, dzs, z_binning=False):
     return psis, settings
 
 
-def big_run(methods, voltages, potential, alphas, dzs, z_binning=False):
+def big_run(methods, voltages, potential, alphas, dzs, z_binning=False, save_path="results.pkl"):
     result = {}
     times = []
 
@@ -260,7 +261,7 @@ def big_run(methods, voltages, potential, alphas, dzs, z_binning=False):
     t0_all = time.perf_counter()
 
     for method in methods:
-        result[method] = {}
+        result[method.__name__] = {}  # Use method name (not function object) for serialization
         for voltage in voltages:
             current += 1
             t0_iter = time.perf_counter()
@@ -268,7 +269,7 @@ def big_run(methods, voltages, potential, alphas, dzs, z_binning=False):
 
             psis, settings = run(method, potential, voltage, alphas, dzs, z_binning=z_binning)
 
-            # Timing stats for this (method, voltage) block
+            # Timing stats
             dt = time.perf_counter() - t0_iter
             times.append(dt)
             avg = statistics.mean(times)
@@ -276,10 +277,16 @@ def big_run(methods, voltages, potential, alphas, dzs, z_binning=False):
             eta = timedelta(seconds=int(remaining * avg))
             print(f"Block finished in {dt:.2f}s | avg/block {avg:.2f}s | total ETA {eta}")
 
-            result[method][voltage] = (psis, settings)
+            result[method.__name__][voltage] = (psis, settings)
+
+            # Save intermediate progress every iteration
+            with open(save_path, "wb") as f:
+                pickle.dump(result, f)
+            print(f"Progress saved to {save_path}")
 
     total_time = time.perf_counter() - t0_all
     print(f"\nAll {total} blocks finished in {timedelta(seconds=int(total_time))} "
           f"(avg {statistics.mean(times):.2f}s/block)")
+    print(f"Final results saved to {save_path}")
 
     return result

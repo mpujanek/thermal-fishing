@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from pathlib import Path
+import pickle
 from helpers import diffraction_pattern
 
 # assume input is 322x322 numpy arrays
@@ -17,24 +19,6 @@ def deviation(result_psi, result_settings, ground_truth_psi, ground_truth_settin
 
     return deviation
 
-
-# methods are being visualized AGAINST ground truth (another method)
-def deviation_matrix(methods, ground_truth, voltages, run_result, alphas, dzs):
-    # Initialize ax
-    fig, ax = plt.subplots(len(voltages), len(methods), squeeze=False)
-
-    for i in range(len(methods)):
-        method = methods[i]
-        for j in range(len(voltages)):
-            voltage = voltages[j]
-
-            # access method run in question
-            psis = run_result[method][voltage][0]
-            settings = run_result[method][voltage][1]
-
-            # access corresponding ground truth
-            psis_gt = run_result[ground_truth][voltage][0]
-            settings_gt = run_result[ground_truth][voltage][1]
 
 # methods are being visualized AGAINST ground truth (another method)
 def deviation_matrix(methods, labels, ground_truth, voltages, run_result, alphas, dzs):
@@ -101,6 +85,25 @@ def deviation_matrix(methods, labels, ground_truth, voltages, run_result, alphas
 
 
 def deviation_matrix(methods, labels, ground_truth, voltages, run_result, alphas, dzs):
+    # Allow run_result to be either a dict or a path to a saved file
+    if isinstance(run_result, (str, Path)):
+        path = Path(run_result)
+        print(f"Loading run results from {path} ...")
+        if path.suffix == ".pkl":
+            with open(path, "rb") as f:
+                run_result = pickle.load(f)
+        elif path.suffix == ".json":
+            import json
+            with open(path, "r") as f:
+                run_result = json.load(f)
+        else:
+            raise ValueError(f"Unsupported file type: {path.suffix}")
+        print("Loaded successfully.")
+
+    # map methods to method names
+    methods = [method.__name__ for method in methods]
+    ground_truth = ground_truth.__name__
+
     # rows = voltages, cols = methods; share axes across all plots
     fig, axes = plt.subplots(
         len(voltages), len(methods),
