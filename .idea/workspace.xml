@@ -4,8 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ab9d0a34-448d-44cf-96c0-e51f4df94d46" name="Changes" comment="Added naive fcms">
+    <list default="true" id="ab9d0a34-448d-44cf-96c0-e51f4df94d46" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/simulation.py" beforeDir="false" afterPath="$PROJECT_DIR$/simulation.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/standalone_multislice.py" beforeDir="false" afterPath="$PROJECT_DIR$/standalone_multislice.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -36,7 +37,7 @@
     </favorite-branches>
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="main" />
+        <entry key="$PROJECT_DIR$" value="Casper3" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -185,7 +186,14 @@
       <option name="project" value="LOCAL" />
       <updated>1762341379204</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Added fcms to simulation.py">
+      <created>1762354637745</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1762354637745</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="UnknownFeatures">
@@ -221,6 +229,7 @@
     <MESSAGE value="Moved some stuff around" />
     <MESSAGE value="Added incredible code" />
     <MESSAGE value="Added naive fcms" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added naive fcms" />
+    <MESSAGE value="Added fcms to simulation.py" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added fcms to simulation.py" />
   </component>
 </project>
