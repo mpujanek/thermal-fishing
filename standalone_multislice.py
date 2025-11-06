@@ -182,17 +182,17 @@ def fcms(potential, cfg):
     psi = cfg.probe  # Initialize with the probe function
     K0 = 1 / cfg.lam
     a = 2 * np.pi * 1.j * cfg.dz * K0
-    b = 1 + cfg.sigma / (np.pi * K0) * potential[:, :, :]
     c = 1 / (2 * np.pi * K0)**2
-    coef0 = np.exp(a * (np.sqrt(b) - 1))
-    coef1 = a * c * np.exp(a * (np.sqrt(b) - 1)) / (2 * np.sqrt(b))
-    coef2 = a * (a * np.sqrt(b) - 1) * c ** 2 * np.exp(a * (np.sqrt(b) - 1)) / (8 * np.pow(b, 3 / 2))
-    coef3 = a * (3 - 3 * a * np.sqrt(b) + a ** 2 * b) * c ** 3 * np.exp(a * (np.sqrt(b) - 1)) / (48 * np.pow(b, 5 / 2))
     for ii in range(cfg.shape[0]):
-        term0 = coef0[ii, :, :] * psi
-        term1 = coef1[ii, :, :] * laplace(psi)
-        term2 = coef2[ii, :, :] * laplace_n(psi, 2)
-        term3 = coef3[ii, :, :] * laplace_n(psi, 3)
+        b = 1 + cfg.sigma / (np.pi * K0) * potential[ii, :, :]
+        coef0 = np.exp(a * (np.sqrt(b) - 1))
+        coef1 = a * c * np.exp(a * (np.sqrt(b) - 1)) / (2 * np.sqrt(b))
+        coef2 = a * (a * np.sqrt(b) - 1) * c**2 * np.exp(a * (np.sqrt(b) - 1)) / (8 * np.pow(b, 3/2))
+        coef3 = a * (3 - 3 * a * np.sqrt(b) + a**2 * b) * c**3 * np.exp(a * (np.sqrt(b) - 1)) / (48 * np.pow(b, 5/2))
+        term0 = coef0 * psi
+        term1 = coef1 * laplace(psi)
+        term2 = coef2 * laplace_n(psi, 2)
+        term3 = coef3 * laplace_n(psi, 3)
         tmp = term0 + term1 + term2 + term3
         psi = ifft2(fft2(tmp) * bwl_msk)  # Impinging wave for the next slice
 
@@ -361,7 +361,7 @@ def crop_dp(dp, cfg):
 
 def diffraction_pattern(potential, cfg):
 
-    psi = multislice(potential, cfg)  # Calculate the exit wave of the sample
+    psi = fcms(potential, cfg)  # Calculate the exit wave of the sample
 
     dp = np.abs(fft2(psi))**2  # Convert to diffraction space and intensities
 
@@ -388,7 +388,7 @@ if __name__ == '__main__':
     # Crop the z-direction if needed
     potential = crop_z(potential, factor=20)
 
-    settings = Settings(ht=50.,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
+    settings = Settings(ht=100.,  # [kV] 'high tension,' a.k.a. acceleration voltage.  Vary between 10. and 100.
                         # The size and dx of the provided potential are optimized for alpha=20. Keep fixed, especially
                         # in the beginning of the assignment! Later you can vary between 10. and 30. if you're curious.
                         alpha=20.,  # [mrad] convergence angle, 20. is the default.
