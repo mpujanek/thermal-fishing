@@ -5,3 +5,4 @@ __pycache__/
 standalone_multislice.py
 .DS_Store
 *.pkl
+.idea/
