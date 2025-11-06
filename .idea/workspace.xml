@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ab9d0a34-448d-44cf-96c0-e51f4df94d46" name="Changes" comment="Added naive fcms">
+    <list default="true" id="ab9d0a34-448d-44cf-96c0-e51f4df94d46" name="Changes" comment="Updated fcms to be more efficient">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/standalone_multislice.py" beforeDir="false" afterPath="$PROJECT_DIR$/standalone_multislice.py" afterDir="false" />
     </list>
@@ -185,7 +185,25 @@
       <option name="project" value="LOCAL" />
       <updated>1762341379204</updated>
     </task>
+<<<<<<< HEAD
     <option name="localTasksCounter" value="7" />
+=======
+    <task id="LOCAL-00007" summary="Added fcms to simulation.py">
+      <created>1762354637745</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1762354637745</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Updated fcms to be more efficient">
+      <created>1762417251832</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1762417251832</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
+>>>>>>> Casper4
     <servers />
   </component>
   <component name="UnknownFeatures">
@@ -221,6 +239,12 @@
     <MESSAGE value="Moved some stuff around" />
     <MESSAGE value="Added incredible code" />
     <MESSAGE value="Added naive fcms" />
+<<<<<<< HEAD
     <option name="LAST_COMMIT_MESSAGE" value="Added naive fcms" />
+=======
+    <MESSAGE value="Added fcms to simulation.py" />
+    <MESSAGE value="Updated fcms to be more efficient" />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated fcms to be more efficient" />
+>>>>>>> Casper4
   </component>
 </project>

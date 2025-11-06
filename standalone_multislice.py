@@ -184,16 +184,12 @@ def fcms(potential, cfg):
     a = 2 * np.pi * 1.j * cfg.dz * K0
     c = 1 / (2 * np.pi * K0)**2
     for ii in range(cfg.shape[0]):
-        b = 1 + cfg.sigma / (np.pi * K0) * potential[ii, :, :]
-        coef0 = np.exp(a * (np.sqrt(b) - 1))
-        coef1 = a * c * np.exp(a * (np.sqrt(b) - 1)) / (2 * np.sqrt(b))
-        coef2 = a * (a * np.sqrt(b) - 1) * c**2 * np.exp(a * (np.sqrt(b) - 1)) / (8 * np.pow(b, 3/2))
-        coef3 = a * (3 - 3 * a * np.sqrt(b) + a**2 * b) * c**3 * np.exp(a * (np.sqrt(b) - 1)) / (48 * np.pow(b, 5/2))
-        term0 = coef0 * psi
-        term1 = coef1 * laplace(psi)
-        term2 = coef2 * laplace_n(psi, 2)
-        term3 = coef3 * laplace_n(psi, 3)
-        tmp = term0 + term1 + term2 + term3
+        b = cfg.sigma / (np.pi * K0) * potential[ii, :, :]
+        term0 = (1 + 1/2 * a * b + 1/8 * (a**2 - a) * b**2) * psi
+        term_lap1 = (1/2 * a * c + 1/8 * (a**2 - a) * b * c) * laplace_n(psi, 1)
+        term_lap2 = (1/8 * (a**2 - a) * c**2) * laplace_n(psi, 2)
+        term_lap1_pot1 = (1/8 * (a**2 - a) * c) * laplace_n(psi * b, 1)
+        tmp = term0 + term_lap1 + term_lap1_pot1 + term_lap2
         psi = ifft2(fft2(tmp) * bwl_msk)  # Impinging wave for the next slice
 
     return psi
